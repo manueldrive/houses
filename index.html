@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0b0a0d" />
+<title>House Ledger</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%AA%84%3C/text%3E%3C/svg%3E" />
+
+<meta name="apple-mobile-web-app-title" content="House Ledger" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="msapplication-TileColor" content="#0b0a0d" />
+<meta name="msapplication-TileImage" content="android-chrome-192x192.png" />
+
+<!-- Font Awesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+/* Preview fallback: if Firebase can't load (e.g. offline preview), keep data in this browser only. */
+if (!window.firebase) {
+// Minimal firebase compat stand-in backed by localStorage (shared across pages on one origin).
+(function(){
+  const K="__mockdb";
+  const load=()=>JSON.parse(localStorage.getItem(K)||"{}");
+  const store=t=>localStorage.setItem(K,JSON.stringify(t));
+  const parts=p=>p.split("/").filter(Boolean);
+  const get=(t,p)=>parts(p).reduce((o,k)=>o==null?undefined:o[k],t);
+  const listeners=[];
+  function put(p,v){ const t=load(); const ks=parts(p); let o=t; ks.slice(0,-1).forEach(k=>{ if(typeof o[k]!=="object"||o[k]===null) o[k]={}; o=o[k]; });
+    v=v==null?undefined:JSON.parse(JSON.stringify(v)); if(v===undefined) delete o[ks[ks.length-1]]; else o[ks[ks.length-1]]=v; store(t);
+    setTimeout(()=>listeners.forEach(l=>{ if(p.startsWith(l.p)||l.p.startsWith(p)) l.cb(snap(l.p)); }),0); }
+  const snap=p=>({val:()=>{const v=get(load(),p);return v===undefined?null:JSON.parse(JSON.stringify(v));}});
+  function ref(p){ p=parts(p||"").join("/"); return {
+    child:c=>ref(p+"/"+c), set:v=>{ window.__writes=(window.__writes||[]).concat([p]); put(p,v); return Promise.resolve(); },
+    once:()=>Promise.resolve(snap(p)), on:(e,cb)=>{ listeners.push({p,cb}); setTimeout(()=>cb(snap(p)),0); } }; }
+  window.firebase={apps:[],initializeApp(){this.apps.push(1)},database:()=>({ref})};
+})();
+
+}
+</script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=EB+Garamond:wght@500;600;700&display=swap');
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: #0b0a0d;
+    color: #E2E8F0;
+    font-family: 'EB Garamond', Georgia, serif;
+    overflow-x: hidden;
+  }
+  
+  #space-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    transform: translateZ(0);
+    background: 
+      radial-gradient(ellipse 120% 60% at 50% 0%, rgba(58, 62, 120, 0.35) 0%, transparent 70%),
+      radial-gradient(ellipse 80% 40% at 50% 100%, rgba(120, 80, 30, 0.18) 0%, transparent 70%),
+      linear-gradient(180deg, #121530 0%, #0d0e1c 45%, #0b0a0d 100%);
+  }
+
+  #star-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  
+  #root {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 16px 16px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (min-width: 768px) {
+    #root { max-width: 1360px; padding: 24px 32px; }
+  }
+
+
+  /* ---- House atmospheres: Gryffindor embers, Ravenclaw night sky, Hufflepuff warm forest light ---- */
+  .corps-card.house-p1, .lantern-btn.house-p1 {
+    background:
+      radial-gradient(ellipse 90% 55% at 50% 115%, rgba(229, 72, 59, 0.32), transparent 70%),
+      linear-gradient(180deg, rgba(44, 15, 14, 0.94), rgba(22, 10, 12, 0.94));
+  }
+  .corps-card.house-p2, .lantern-btn.house-p2 {
+    background:
+      radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.7), transparent 60%),
+      radial-gradient(1px 1px at 68% 9%, rgba(255,255,255,0.55), transparent 60%),
+      radial-gradient(1.5px 1.5px at 84% 34%, rgba(200,220,255,0.6), transparent 60%),
+      radial-gradient(1px 1px at 36% 42%, rgba(255,255,255,0.4), transparent 60%),
+      radial-gradient(1px 1px at 52% 22%, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(ellipse 80% 50% at 80% 0%, rgba(91, 141, 239, 0.28), transparent 70%),
+      linear-gradient(180deg, rgba(13, 22, 50, 0.95), rgba(9, 12, 28, 0.95));
+  }
+  .corps-card.house-p3, .lantern-btn.house-p3 {
+    background:
+      linear-gradient(115deg, transparent 30%, rgba(240, 196, 25, 0.10) 38%, transparent 46%),
+      linear-gradient(115deg, transparent 52%, rgba(240, 196, 25, 0.07) 58%, transparent 64%),
+      radial-gradient(ellipse 70% 55% at 20% -5%, rgba(240, 196, 25, 0.30), transparent 70%),
+      linear-gradient(180deg, rgba(36, 30, 14, 0.95), rgba(16, 20, 12, 0.95));
+  }
+  .lantern-btn.house-p1.selected-p1, .lantern-btn.house-p2.selected-p2, .lantern-btn.house-p3.selected-p3 { filter: brightness(1.25); }
+
+  .corps-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    opacity: 0.8;
+  }
+  .corps-card.house-p1::after {
+    background-image:
+      radial-gradient(2px 2px at 20% 90%, rgba(255, 150, 90, 0.9), transparent 60%),
+      radial-gradient(1.5px 1.5px at 60% 80%, rgba(255, 190, 110, 0.8), transparent 60%),
+      radial-gradient(2px 2px at 85% 95%, rgba(255, 120, 80, 0.8), transparent 60%),
+      radial-gradient(1.5px 1.5px at 40% 100%, rgba(255, 170, 100, 0.7), transparent 60%);
+    background-size: 100% 260px;
+    animation: emberRise 9s linear infinite;
+  }
+  .corps-card.house-p2::after {
+    background-image:
+      radial-gradient(1.5px 1.5px at 25% 30%, rgba(255,255,255,0.9), transparent 60%),
+      radial-gradient(1.5px 1.5px at 75% 55%, rgba(200,220,255,0.9), transparent 60%),
+      radial-gradient(1px 1px at 55% 75%, rgba(255,255,255,0.8), transparent 60%);
+    background-size: 100% 220px;
+    animation: starTwinkle 4.5s ease-in-out infinite;
+  }
+  .corps-card.house-p3::after {
+    background-image:
+      radial-gradient(2px 2px at 30% 20%, rgba(255, 220, 120, 0.7), transparent 60%),
+      radial-gradient(1.5px 1.5px at 70% 45%, rgba(255, 230, 150, 0.6), transparent 60%),
+      radial-gradient(2px 2px at 50% 70%, rgba(255, 210, 110, 0.5), transparent 60%);
+    background-size: 100% 240px;
+    animation: moteDrift 14s ease-in-out infinite;
+  }
+  @keyframes emberRise { from { background-position: 0 0; } to { background-position: 0 -260px; } }
+  @keyframes starTwinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+  @keyframes moteDrift { 0%, 100% { background-position: 0 0; } 50% { background-position: 18px -30px; } }
+  .corps-card > * { position: relative; z-index: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .corps-card::after { animation: none; }
+  }
+
+  [style*="IM Fell English SC"], .house-cup-title, .cup-pts, .cup-lead, .points-toast, .header-clock { font-synthesis: none; }
+
+  /* ---- House points ---- */
+  .pulse-lantern { animation: none !important; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)) !important; opacity: 1 !important; }
+
+  .house-cup {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 14px 14px 12px;
+    margin-bottom: 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(201, 169, 110, 0.25);
+    background: linear-gradient(180deg, rgba(36, 30, 44, 0.85), rgba(20, 16, 24, 0.85));
+  }
+  .house-cup-title {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: 'IM Fell English SC', serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #e3cf9f;
+  }
+  .house-cup-title span { font-size: 22px; letter-spacing: 1.5px; color: #f1e6c8; text-transform: none; }
+  .house-cup-title em { font-style: normal; font-size: 13px; letter-spacing: 2px; color: #c9a96e; text-transform: uppercase; margin-left: 8px; }
+  @media (max-width: 420px) { .house-cup-title em { display: block; margin: 2px 0 0; } }
+  .house-cup-title small { font-family: 'EB Garamond', serif; letter-spacing: 0; text-transform: none; font-size: 13px; color: #94a3b8; font-weight: 600; }
+  .cup-col { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+  .cup-pts { font-family: 'IM Fell English SC', serif; font-weight: 900; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .cup-pts span { font-size: 10px; letter-spacing: 1px; color: #94a3b8; font-weight: 700; margin-left: 3px; }
+  .cup-name { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+  .cup-lead { font-family: 'IM Fell English SC', serif; font-size: 9px; letter-spacing: 1.5px; color: #0b0a0d; background: #e3cf9f; border-radius: 4px; padding: 1px 5px; }
+  .cup-lead.hidden { visibility: hidden; }
+  @media (min-width: 768px) { .cup-pts { font-size: 40px; } }
+
+  .points-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 60;
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: 1px solid var(--toast-accent);
+    background: rgba(20, 16, 24, 0.96);
+    color: #f1e6c8;
+    font-family: 'IM Fell English SC', serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    animation: toastIn 2.4s ease forwards;
+    pointer-events: none;
+  }
+  .points-toast b { color: var(--toast-accent); }
+  @keyframes toastIn {
+    0% { opacity: 0; transform: translate(-50%, 12px); }
+    12%, 75% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -8px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .points-toast { animation: none; } }
+
+  /* Rhythmic Pulse Animation */
+  @keyframes lanternPulse {
+    0%, 100% {
+      opacity: var(--pulse-base-opacity, 0.4);
+      filter: drop-shadow(0 0 var(--pulse-min-blur, 3px) var(--pulse-color)) drop-shadow(0 0 calc(var(--pulse-min-blur, 3px) * 2) var(--pulse-sec-color));
+    }
+    50% {
+      opacity: var(--pulse-peak-opacity, 0.7);
+      filter: drop-shadow(0 0 var(--pulse-max-blur, 10px) var(--pulse-color)) drop-shadow(0 0 calc(var(--pulse-max-blur, 10px) * 2.2) var(--pulse-sec-color));
+    }
+  }
+
+  .pulse-lantern {
+    animation: lanternPulse 2.4s infinite ease-in-out;
+  }
+
+  .user-grid { display: block; }
+  .user-piece { display: none; }
+  .user-piece.active { display: block; }
+  .wide-only { display: none; }
+
+  @media (min-width: 768px) {
+    .user-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .user-piece { display: block !important; }
+    .narrow-only { display: none !important; }
+    .wide-only { display: flex !important; }
+  }
+
+  /* Corps Card with Inset Laser Rail */
+  .corps-card {
+    background: rgba(24, 20, 30, 0.88);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(14px);
+    padding: 20px 18px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .corps-card::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 18px;
+    right: 18px;
+    height: 2px;
+    background: var(--card-accent);
+    border-radius: 2px;
+    opacity: 0.55;
+  }
+
+  .lantern-btn {
+    flex: 1;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(24, 20, 30, 0.7);
+    color: #fff;
+    cursor: pointer;
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s ease;
+  }
+
+  .lantern-btn.selected-p1 { background: rgba(229, 72, 59, 0.16); border-color: #e5483b; }
+  .lantern-btn.selected-p2 { background: rgba(91, 141, 239, 0.16); border-color: #5b8def; }
+  .lantern-btn.selected-p3 { background: rgba(240, 196, 25, 0.14); border-color: #f0c419; }
+
+  .settings-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .settings-btn:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .week-glance-row {
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 6px;
+    margin-bottom: 12px;
+  }
+
+  .glance-day {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 0;
+    border-radius: 6px;
+    font-family: 'IM Fell English SC', monospace;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+  .glance-day:hover:not(.future) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .glance-day.selected {
+    border-color: #fff !important;
+    box-shadow: none;
+    transform: translateY(-1px);
+  }
+  .glance-day.pass {
+    color: #c9a96e;
+    background: rgba(201, 169, 110, 0.12);
+  }
+  .glance-day.fail {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .glance-day.future {
+    color: #475569;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Historical View Indicator Banner */
+  .history-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+    font-family: 'IM Fell English SC', monospace;
+    font-size: 11px;
+    color: #cbd5e1;
+  }
+
+  .history-reset-btn {
+    background: transparent;
+    border: 1px solid var(--card-accent, #c9a96e);
+    color: var(--card-accent, #c9a96e);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-family: 'IM Fell English SC', monospace;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .history-reset-btn:hover {
+    background: var(--card-accent, #c9a96e);
+    color: #0b0a0d;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .plan-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .plan-day { width: 34px; font-family: 'IM Fell English SC', monospace; font-size: 11px; font-weight: 700; color: #cbd5e1; }
+  .plan-seg { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .plan-seg button {
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.03);
+    color: #94a3b8;
+    border-radius: 6px;
+    padding: 6px 0;
+    font-family: 'EB Garamond', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .day-chip {
+    flex: 1;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.03);
+    color: #94a3b8;
+    border-radius: 6px;
+    padding: 6px 0;
+    font-size: 11px;
+    font-family: 'IM Fell English SC', monospace;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+  }
+
+  .goal-input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .goal-setting-input {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    color: #fff;
+    font-family: 'IM Fell English SC', monospace;
+    font-size: 13px;
+    padding: 5px 8px;
+    width: 90px;
+    text-align: right;
+    outline: none;
+  }
+  .goal-setting-input:focus {
+    border-color: #c9a96e;
+  }
+
+  .toggle-switch-btn {
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    width: 44px;
+    height: 22px;
+    padding: 2px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  .toggle-knob {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #94a3b8;
+    transition: all 0.2s ease;
+    display: block;
+  }
+  .toggle-switch-btn.on {
+    background: rgba(201, 169, 110, 0.25);
+    border-color: #c9a96e;
+  }
+  .toggle-switch-btn.on .toggle-knob {
+    background: #c9a96e;
+    transform: translateX(22px);
+    box-shadow: none;
+  }
+
+  .export-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'IM Fell English SC', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .export-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .protocol-card {
+    background: rgba(24, 20, 30, 0.6);
+    border: 1px solid rgba(201, 169, 110, 0.1);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+  }
+  .protocol-card.completed-p1 { background: rgba(229, 72, 59, 0.15); border-color: #e5483b; }
+  .protocol-card.completed-p2 { background: rgba(91, 141, 239, 0.15); border-color: #5b8def; }
+  .protocol-card.completed-p3 { background: rgba(240, 196, 25, 0.13); border-color: #f0c419; }
+
+  .protocol-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(201, 169, 110, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    color: #e3cf9f;
+  }
+
+  .train-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--train-accent, #c9a96e);
+    color: var(--train-accent, #c9a96e);
+    background: rgba(0, 0, 0, 0.35);
+    font-family: 'IM Fell English SC', monospace;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    box-shadow: none;
+    white-space: nowrap;
+  }
+  .train-btn:hover { background: rgba(255, 255, 255, 0.06); }
+
+  .check-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 2px solid rgba(201, 169, 110, 0.3);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 13px;
+    transition: all 0.2s ease;
+  }
+
+  .hud-stat-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .hud-stat {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(201, 169, 110, 0.12);
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+
+  .val-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(201, 169, 110, 0.4);
+    color: #fff;
+    font-family: 'IM Fell English SC', monospace;
+    font-size: 16px;
+    text-align: center;
+    width: 100%;
+    outline: none;
+  }
+
+  .header-clock {
+    font-family: 'IM Fell English SC', monospace;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-shadow: none;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-card {
+    background: #15111a;
+    border-radius: 20px;
+    border: 1px solid rgba(201, 169, 110, 0.3);
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+    position: relative;
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin: 12px 0;
+  }
+  .cal-cell {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IM Fell English SC', monospace;
+    font-size: 11px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .cal-cell.pass {
+    background: rgba(201, 169, 110, 0.15);
+    border-color: #c9a96e;
+    color: #c9a96e;
+  }
+  .cal-cell.fail {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
+
+  /* Monday Reflection — checklist line item (solid lantern-accent bg) */
+  .reflection-line {
+    background: var(--card-accent);
+    border: 1px solid var(--card-accent);
+    color: #1b1722;
+    cursor: pointer;
+  }
+  .reflection-line .protocol-icon-box {
+    background: rgba(11, 10, 13, 0.22);
+    color: #1b1722;
+  }
+  .reflection-line .reflection-line-sub {
+    color: rgba(24, 20, 30, 0.72);
+  }
+  .reflection-line:hover {
+    filter: brightness(1.08);
+  }
+  .reflection-line .check-btn {
+    border-color: rgba(24, 20, 30, 0.4);
+    color: #1b1722;
+  }
+  .reflection-line.reflection-done .check-btn {
+    background: #1b1722;
+    border-color: #1b1722;
+    color: var(--card-accent);
+  }
+  .reflection-line .chev-icon {
+    color: rgba(24, 20, 30, 0.6);
+    font-size: 13px;
+  }
+
+  /* Monday Reflection Debrief Section (rendered inside a modal) */
+  .reflection-card {
+    background: rgba(24, 20, 30, 0.96);
+    border: 1px solid var(--card-accent, #c9a96e);
+    box-shadow: none;
+    border-radius: 20px;
+    padding: 20px 18px;
+    margin-bottom: 20px;
+  }
+
+  .q-title {
+    font-family: 'IM Fell English SC', monospace;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--card-accent, #c9a96e);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .q-sub {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 8px;
+    line-height: 1.35;
+  }
+
+  .reflection-textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #e2e8f0;
+    font-family: 'EB Garamond', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    resize: vertical;
+    min-height: 64px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .reflection-textarea:focus {
+    border-color: var(--card-accent, #c9a96e);
+    box-shadow: none;
+  }
+
+  .scripture-box {
+    background: rgba(24, 20, 30, 0.7);
+    border: 1px solid rgba(201, 169, 110, 0.22);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 16px 0;
+    text-align: center;
+  }
+
+  .charge-btn {
+    width: 100%;
+    background: var(--card-accent, #c9a96e);
+    color: #0b0a0d;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-family: 'IM Fell English SC', monospace;
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: none;
+    transition: all 0.2s ease;
+  }
+  .charge-btn:hover {
+    filter: brightness(1.15);
+    box-shadow: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="space-bg">
+  <canvas id="star-canvas"></canvas>
+</div>
+<div id="root"></div>
+
+<script>
+"use strict";
+
+var DAYS_OF_WEEK = [
+  { label: "Mon", jsDay: 1 },
+  { label: "Tue", jsDay: 2 },
+  { label: "Wed", jsDay: 3 },
+  { label: "Thu", jsDay: 4 },
+  { label: "Fri", jsDay: 5 },
+  { label: "Sat", jsDay: 6 },
+  { label: "Sun", jsDay: 0 }
+];
+
+var USERS = {
+  p1: { id: "p1", callsign: "0104", house: "Gryffindor", role: "House of Gryffindor", initial: "G", accent: "#e5483b", secondary: "#d4a537" },
+  p2: { id: "p2", callsign: "0211", house: "Ravenclaw",  role: "House of Ravenclaw",  initial: "R", accent: "#5b8def", secondary: "#b08d57" },
+  p3: { id: "p3", callsign: "0814", house: "Hufflepuff", role: "House of Hufflepuff", initial: "H", accent: "#f0c419", secondary: "#c98a12" }
+};
+
+function todayDateString(dateObj) {
+  var d = dateObj || new Date();
+  var year = d.getFullYear();
+  var month = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return year + "-" + month + "-" + day;
+}
+
+function getDynamicRingStyle(ratio, accent, secondary) {
+  var baseOpacity = 0.35 + (ratio * 0.55);
+  var peakOpacity = 0.6 + (ratio * 0.4);
+  var minBlur = Math.max(2, Math.round(2 + ratio * 8));
+  var maxBlur = Math.max(6, Math.round(6 + ratio * 20));
+
+  return '--pulse-color: ' + accent + '; ' +
+         '--pulse-sec-color: ' + secondary + '; ' +
+         '--pulse-base-opacity: ' + baseOpacity.toFixed(2) + '; ' +
+         '--pulse-peak-opacity: ' + peakOpacity.toFixed(2) + '; ' +
+         '--pulse-min-blur: ' + minBlur + 'px; ' +
+         '--pulse-max-blur: ' + maxBlur + 'px;';
+}
+
+function greenLanternRingSvg(accent, ratio, initial) {
+  if (ratio === undefined) ratio = 0;
+  var id = "cr" + Math.random().toString(36).slice(2, 8);
+  var fillY = (92 - ratio * 84).toFixed(1);
+  return '<svg width="44" height="44" viewBox="0 0 100 100" fill="none">' +
+    '<defs><clipPath id="' + id + '"><path d="M50 6 L88 18 V48 C88 72 70 88 50 95 C30 88 12 72 12 48 V18 Z"/></clipPath></defs>' +
+    '<path d="M50 6 L88 18 V48 C88 72 70 88 50 95 C30 88 12 72 12 48 V18 Z" fill="#15111a" fill-opacity="0.85"/>' +
+    '<rect x="0" y="' + fillY + '" width="100" height="100" fill="' + accent + '" fill-opacity="' + (0.35 + ratio * 0.45).toFixed(2) + '" clip-path="url(#' + id + ')"/>' +
+    '<path d="M50 6 L88 18 V48 C88 72 70 88 50 95 C30 88 12 72 12 48 V18 Z" stroke="' + accent + '" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M50 14 L80 23.5 V48 C80 67 66 80 50 86 C34 80 20 67 20 48 V23.5 Z" stroke="' + accent + '" stroke-width="1.5" opacity="0.5"/>' +
+    (initial ? '<text x="50" y="62" text-anchor="middle" font-family="IM Fell English SC, serif" font-weight="900" font-size="38" fill="#fff" fill-opacity="' + (0.55 + ratio * 0.45).toFixed(2) + '">' + initial + '</text>' : '') +
+  '</svg>';
+}
+
+function defaultUserData() {
+  return {
+    weight: "",
+    weighMode: "check", // "check" (default) = just check off that you weighed in, "number" = type the weight
+    done: {},
+    workoutDays: [], // Default set to 0 days
+    trackProtein: false,
+    goals: {
+      steps: 8000,
+      calories: 1800,
+      protein: 100
+    },
+    history: {},
+    reflections: {}
+  };
+}
+
+var state = {
+  activeTab: "p1",
+  selectedDate: {
+    p1: todayDateString(),
+    p2: todayDateString(),
+    p3: todayDateString()
+  },
+  settingsModalUser: null,
+  reportModal: null,
+  reflectionModal: null,
+  data: {
+    p1: defaultUserData(),
+    p2: defaultUserData(),
+    p3: defaultUserData()
+  },
+  lastActiveDate: null
+};
+
+(function() {
+  var t = new URLSearchParams(location.search).get("tab");
+  if (USERS[t]) state.activeTab = t;
+})();
+
+/* ---------------- Persistence ---------------- */
+var firebaseConfig = {
+  apiKey: "AIzaSyDMxcuNZmdic9AZIL5uQwvGdxKnGW2Uq_c",
+  authDomain: "bao-buddy.firebaseapp.com",
+  databaseURL: "https://bao-buddy-default-rtdb.firebaseio.com",
+  projectId: "bao-buddy",
+  storageBucket: "bao-buddy.firebasestorage.app",
+  messagingSenderId: "167816448505",
+  appId: "1:167816448505:web:35d57633f3caea0ba71528"
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+var db = firebase.database();
+var dbRef = db.ref("house_ledger_v1");
+
+function sanitizeState() {
+  if (!state.data || typeof state.data !== "object") {
+    state.data = {};
+  }
+  Object.keys(USERS).forEach(function(u) {
+    if (!state.data[u] || typeof state.data[u] !== "object") {
+      state.data[u] = defaultUserData();
+    }
+    if (!state.data[u].done || typeof state.data[u].done !== "object") {
+      state.data[u].done = {};
+    }
+    if (state.data[u].trackProtein === undefined) {
+      state.data[u].trackProtein = false;
+    }
+    if (!state.data[u].goals || typeof state.data[u].goals !== "object") {
+      state.data[u].goals = { steps: 8000, calories: 1800, protein: 100 };
+    }
+    if (!state.data[u].goals.steps) state.data[u].goals.steps = 8000;
+    if (!state.data[u].goals.calories) state.data[u].goals.calories = 1800;
+    if (!state.data[u].goals.protein) state.data[u].goals.protein = 100;
+
+    if (!state.data[u].history || typeof state.data[u].history !== "object") {
+      state.data[u].history = {};
+    }
+    
+    // Ensure all historical entries have reliable properties
+    Object.keys(state.data[u].history).forEach(function(dKey) {
+      if (!state.data[u].history[dKey] || typeof state.data[u].history[dKey] !== "object") {
+        state.data[u].history[dKey] = { done: {}, weight: "" };
+      }
+      if (!state.data[u].history[dKey].done || typeof state.data[u].history[dKey].done !== "object") {
+        state.data[u].history[dKey].done = {};
+      }
+      if (state.data[u].history[dKey].weight === undefined) {
+        state.data[u].history[dKey].weight = "";
+      }
+    });
+
+    if (!state.data[u].reflections || typeof state.data[u].reflections !== "object") {
+      state.data[u].reflections = {};
+    }
+    if (!state.data[u].workoutPlan || typeof state.data[u].workoutPlan !== "object" || Array.isArray(state.data[u].workoutPlan)) {
+      state.data[u].workoutPlan = {};
+    }
+    if (!Array.isArray(state.data[u].workoutDays)) {
+      state.data[u].workoutDays = []; // Fallback set to 0 days
+    }
+    if (state.data[u].weighMode !== "number") state.data[u].weighMode = "check";
+    if (state.data[u].weight === undefined) {
+      state.data[u].weight = "";
+    }
+    if (!state.selectedDate[u]) {
+      state.selectedDate[u] = todayDateString();
+    }
+  });
+}
+
+function evaluateDayRecord(uData, dateStr) {
+  var isToday = dateStr === todayDateString();
+  var dObj = new Date(dateStr + "T12:00:00");
+  var dayOfWeek = dObj.getDay();
+
+  // Read preserved schedule snapshot for past dates if available
+  var isWorkoutDay;
+  if (!isToday && uData.history[dateStr] && uData.history[dateStr].isWorkoutDay !== undefined) {
+    isWorkoutDay = uData.history[dateStr].isWorkoutDay;
+  } else {
+    isWorkoutDay = (uData.workoutDays || []).indexOf(dayOfWeek) !== -1;
+  }
+
+  var hasProtein = uData.trackProtein === true;
+
+  var sourceDone = isToday ? (uData.done || {}) : (uData.history[dateStr] ? (uData.history[dateStr].done || {}) : {});
+  var sourceWeight = isToday ? uData.weight : (uData.history[dateStr] ? uData.history[dateStr].weight : "");
+
+  var required = ["steps", "macros"];
+  if (hasProtein) required.push("protein");
+  if (isWorkoutDay) required.push("workout");
+
+  var missed = [];
+  required.forEach(function(reqId) {
+    if (!sourceDone[reqId]) missed.push(reqId);
+  });
+
+  var hasWeight = (sourceWeight !== undefined && String(sourceWeight).trim() !== "") || !!sourceDone.weighed;
+  if (!hasWeight) missed.push("weight");
+
+  var passed = missed.length === 0;
+
+  return {
+    done: Object.assign({}, sourceDone),
+    weight: sourceWeight || "",
+    passed: passed,
+    missed: missed,
+    isWorkoutDay: isWorkoutDay,
+    totalRequired: required.length + 1,
+    completedCount: (required.length + 1) - missed.length
+  };
+}
+
+function syncDayToHistory(userId, dateStr) {
+  var uData = state.data[userId];
+  var evalResult = evaluateDayRecord(uData, dateStr);
+  if (!uData.history[dateStr]) {
+    uData.history[dateStr] = { done: {}, weight: "" };
+  }
+  uData.history[dateStr].done = Object.assign({}, evalResult.done);
+  uData.history[dateStr].weight = evalResult.weight;
+  uData.history[dateStr].passed = evalResult.passed;
+  uData.history[dateStr].missed = evalResult.missed;
+  uData.history[dateStr].isWorkoutDay = evalResult.isWorkoutDay;
+  uData.history[dateStr].totalRequired = evalResult.totalRequired;
+  uData.history[dateStr].completedCount = evalResult.completedCount;
+}
+
+function savePersisted() {
+  sanitizeState();
+  dbRef.set({
+    data: state.data,
+    lastActiveDate: state.lastActiveDate
+  });
+}
+
+function initPersistence() {
+  dbRef.on("value", function (snapshot) {
+    var saved = snapshot.val();
+    var today = todayDateString();
+
+    if (saved) {
+      if (saved.data) state.data = saved.data;
+      if (saved.lastActiveDate) state.lastActiveDate = saved.lastActiveDate;
+    }
+
+    sanitizeState();
+
+    if (state.lastActiveDate && state.lastActiveDate !== today) {
+      Object.keys(USERS).forEach(function(u) {
+        syncDayToHistory(u, state.lastActiveDate);
+        state.data[u].done = {};
+        state.data[u].weight = "";
+        state.selectedDate[u] = today;
+      });
+      state.lastActiveDate = today;
+      savePersisted();
+    } else if (!state.lastActiveDate) {
+      state.lastActiveDate = today;
+      savePersisted();
+    }
+    
+    mainLoaded = true;
+    applyFinishedWorkouts();
+
+    var activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+      return;
+    }
+    render();
+  });
+
+  Object.keys(USERS).forEach(function(u) {
+    workoutRef.child(u + "/finished").on("value", function(snap) {
+      finishedWorkouts[u] = snap.val() || {};
+      applyFinishedWorkouts();
+      var activeEl = document.activeElement;
+      if (!activeEl || (activeEl.tagName !== "INPUT" && activeEl.tagName !== "TEXTAREA")) render();
+    });
+  });
+}
+
+/* ---------------- House points ---------------- */
+// 10 points per completed task, 50 bonus for a full day, 20 for the weekly house review.
+var POINTS = { task: 10, fullDay: 50, review: 20 };
+var shownPoints = {}; // points last drawn on screen per "user|date", for before/after toasts on typed fields
+
+function dayPoints(userId, dateStr) {
+  var uData = state.data[userId];
+  if (!uData) return 0;
+  var ev = evaluateDayRecord(uData, dateStr);
+  var pts = ev.completedCount * POINTS.task + (ev.passed ? POINTS.fullDay : 0);
+  var refl = uData.reflections && uData.reflections[dateStr];
+  if (refl && refl.completed) pts += POINTS.review;
+  return pts;
+}
+
+function cupTotals() {
+  var today = new Date();
+  var totals = {};
+  Object.keys(USERS).forEach(function(u) {
+    var sum = 0;
+    for (var d = 1; d <= today.getDate(); d++) {
+      sum += dayPoints(u, todayDateString(new Date(today.getFullYear(), today.getMonth(), d)));
+    }
+    totals[u] = sum;
+  });
+  return totals;
+}
+
+function renderHouseCup() {
+  var totals = cupTotals();
+  var max = Math.max.apply(null, Object.keys(totals).map(function(k) { return totals[k]; }));
+  var leaders = Object.keys(totals).filter(function(k) { return max > 0 && totals[k] === max; });
+  var month = new Date().toLocaleDateString(undefined, { month: "long" });
+  var html = '<div class="house-cup" aria-label="House Cup standings">' +
+    '<div class="house-cup-title"><span>The Great Hall <em>House Cup</em></span><small>' + month + ' standings</small></div>';
+  Object.keys(USERS).forEach(function(k) {
+    var uu = USERS[k];
+    html += '<div class="cup-col">' +
+      '<span class="cup-lead' + (leaders.indexOf(k) !== -1 && leaders.length === 1 ? '' : ' hidden') + '">LEADING</span>' +
+      '<div class="cup-pts" style="color:' + uu.accent + '">' + totals[k].toLocaleString() + '<span>PTS</span></div>' +
+      '<div class="cup-name" style="color:' + uu.accent + '">' + uu.house + '</div>' +
+    '</div>';
+  });
+  return html + '</div>';
+}
+
+function showPointsToast(userId, delta) {
+  if (!delta) return;
+  var u = USERS[userId];
+  var old = document.querySelector(".points-toast");
+  if (old) old.remove();
+  var t = document.createElement("div");
+  t.className = "points-toast";
+  t.style.setProperty("--toast-accent", u.accent);
+  t.setAttribute("role", "status");
+  t.innerHTML = delta > 0
+    ? '<b>+' + delta + '</b> points to ' + u.house
+    : '<b>' + delta + '</b> points from ' + u.house;
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 2500);
+}
+
+/* ---------------- Workout page link ---------------- */
+// workout.html writes house_workouts_v1/<house>/finished/<date> when a session is finished.
+// The first time this page sees that flag it checks off Completed Workout for that date, then marks the flag applied.
+var workoutRef = db.ref("house_workouts_v1");
+var finishedWorkouts = { p1: {}, p2: {}, p3: {} };
+var mainLoaded = false;
+var WORKOUT_NAMES = { legs: "Leg Day", upper: "Upper Day", full: "Full Day" };
+
+// Per-day plan: workoutPlan["d<jsDay>"] = "legs" | "upper" | "full". Missing = Custom (not linked to the workout page).
+// Keys are prefixed with "d" so Firebase never turns the object into an array.
+function getPlannedWorkout(uData, dateStr) {
+  var plan = uData.workoutPlan || {};
+  var p = plan["d" + new Date(dateStr + "T12:00:00").getDay()];
+  return WORKOUT_NAMES[p] ? p : null;
+}
+
+function applyFinishedWorkouts() {
+  if (!mainLoaded) return;
+  var changed = [];
+  var gained = {};
+  Object.keys(USERS).forEach(function(u) {
+    var fin = finishedWorkouts[u] || {};
+    Object.keys(fin).forEach(function(dateStr) {
+      var f = fin[dateStr];
+      if (!f || f.applied) return;
+      sanitizeState();
+      var before = dayPoints(u, dateStr);
+      if (dateStr === todayDateString()) {
+        state.data[u].done.workout = true;
+      } else {
+        if (!state.data[u].history[dateStr]) state.data[u].history[dateStr] = { done: {}, weight: "" };
+        if (!state.data[u].history[dateStr].done) state.data[u].history[dateStr].done = {};
+        state.data[u].history[dateStr].done.workout = true;
+      }
+      syncDayToHistory(u, dateStr);
+      gained[u] = (gained[u] || 0) + dayPoints(u, dateStr) - before;
+      workoutRef.child(u + "/finished/" + dateStr + "/applied").set(true);
+      changed.push(u);
+    });
+  });
+  if (changed.length) {
+    savePersisted();
+    playRingChargeSound(changed[0]);
+    setTimeout(function() { showPointsToast(changed[0], gained[changed[0]]); }, 300);
+  }
+}
+
+/* ---------------- Canvas Starfield & Audio ---------------- */
+(function initCandles() {
+  // Enchanted ceiling: faint twinkling stars above, lit candles floating and bobbing at three depths.
+  var canvas = document.getElementById("star-canvas");
+  var ctx = canvas.getContext("2d");
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var width, height, dpr;
+  var stars = [];
+  var candles = [];
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function build() {
+    stars = [];
+    var starCount = Math.round(width * height / 9000);
+    for (var i = 0; i < starCount; i++) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height * 0.6,
+        r: Math.random() * 1.1 + 0.3,
+        a: Math.random() * 0.5 + 0.15,
+        tw: Math.random() * Math.PI * 2,
+        sp: Math.random() * 0.02 + 0.006
+      });
+    }
+    candles = [];
+    var count = Math.max(10, Math.min(26, Math.round(width / 55)));
+    for (var j = 0; j < count; j++) {
+      var depth = Math.random();               // 0 = far, 1 = near
+      var scale = 0.45 + depth * 0.75;
+      candles.push({
+        x: Math.random() * width,
+        y: Math.random() * height * 0.9 + 20,
+        w: 7 * scale,
+        h: (26 + Math.random() * 20) * scale,
+        depth: depth,
+        alpha: 0.35 + depth * 0.5,
+        bob: Math.random() * Math.PI * 2,
+        bobSpeed: 0.003 + Math.random() * 0.004,
+        bobAmp: 10 + depth * 14,
+        wave: Math.random() * Math.PI * 2,
+        waveSpeed: 0.0008 + Math.random() * 0.0012,
+        waveAmp: 18 + depth * 22,
+        sway: Math.random() * Math.PI * 2,
+        swaySpeed: 0.002 + Math.random() * 0.003,
+        swayAmp: 3 + depth * 5,
+        drift: (Math.random() - 0.5) * 0.06,
+        flick: Math.random() * 10
+      });
+    }
+    candles.sort(function(a, b) { return a.depth - b.depth; });
+  }
+
+  function drawCandle(c, t) {
+    var y = c.y + Math.sin(c.bob) * c.bobAmp + Math.sin(c.wave) * c.waveAmp;
+    var x = c.x + Math.sin(c.sway) * c.swayAmp;
+    var flick = 0.85 + Math.sin(t * 0.012 + c.flick) * 0.08 + Math.sin(t * 0.031 + c.flick * 2) * 0.05;
+    ctx.globalAlpha = c.alpha;
+
+    // halo
+    var hr = c.w * 6 * flick;
+    var halo = ctx.createRadialGradient(x, y - c.w * 1.2, 0, x, y - c.w * 1.2, hr);
+    halo.addColorStop(0, "rgba(255, 196, 110, 0.28)");
+    halo.addColorStop(1, "rgba(255, 196, 110, 0)");
+    ctx.fillStyle = halo;
+    ctx.fillRect(x - hr, y - c.w * 1.2 - hr, hr * 2, hr * 2);
+
+    // wax body
+    var body = ctx.createLinearGradient(x - c.w / 2, 0, x + c.w / 2, 0);
+    body.addColorStop(0, "#cbbf9f");
+    body.addColorStop(0.45, "#f4ecd6");
+    body.addColorStop(1, "#b9ab88");
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.moveTo(x - c.w / 2, y);
+    ctx.lineTo(x + c.w / 2, y);
+    ctx.lineTo(x + c.w / 2, y + c.h);
+    ctx.quadraticCurveTo(x, y + c.h + c.w * 0.25, x - c.w / 2, y + c.h);
+    ctx.closePath();
+    ctx.fill();
+    // warm top of the wax
+    ctx.fillStyle = "rgba(255, 210, 140, 0.55)";
+    ctx.fillRect(x - c.w / 2, y, c.w, Math.max(1, c.w * 0.35));
+
+    // wick
+    ctx.strokeStyle = "rgba(40, 30, 20, 0.9)";
+    ctx.lineWidth = Math.max(0.6, c.w * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - c.w * 0.45);
+    ctx.stroke();
+
+    // flame
+    var fh = c.w * 1.9 * flick;
+    var fw = c.w * 0.55;
+    var fy = y - c.w * 0.35;
+    var sway = Math.sin(t * 0.02 + c.flick) * c.w * 0.08;
+    var flame = ctx.createRadialGradient(x, fy - fh * 0.3, 0, x, fy - fh * 0.3, fh * 0.75);
+    flame.addColorStop(0, "rgba(255, 252, 230, 1)");
+    flame.addColorStop(0.45, "rgba(255, 205, 105, 0.95)");
+    flame.addColorStop(1, "rgba(255, 140, 40, 0)");
+    ctx.fillStyle = flame;
+    ctx.beginPath();
+    ctx.moveTo(x, fy);
+    ctx.quadraticCurveTo(x + fw, fy - fh * 0.35, x + sway, fy - fh);
+    ctx.quadraticCurveTo(x - fw, fy - fh * 0.35, x, fy);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function frame(t) {
+    ctx.clearRect(0, 0, width, height);
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      if (!reduceMotion) s.tw += s.sp;
+      ctx.globalAlpha = s.a * (0.6 + 0.4 * Math.sin(s.tw));
+      ctx.fillStyle = "#e9ecff";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    for (var j = 0; j < candles.length; j++) {
+      var c = candles[j];
+      if (!reduceMotion) {
+        c.bob += c.bobSpeed;
+        c.wave += c.waveSpeed;
+        c.sway += c.swaySpeed;
+        c.x += c.drift;
+        if (c.x < -20) c.x = width + 20;
+        if (c.x > width + 20) c.x = -20;
+      }
+      drawCandle(c, reduceMotion ? 0 : t);
+    }
+    if (!reduceMotion) requestAnimationFrame(frame);
+  }
+
+  window.addEventListener("resize", function() {
+    resize();
+    build();
+    if (reduceMotion) frame(0);
+  });
+
+  resize();
+  build();
+  if (reduceMotion) frame(0); else requestAnimationFrame(frame);
+})();
+
+function playRingChargeSound(userId) {
+  var CHIME = { p1: [523.25, 1046.5], p2: [440, 880], p3: [392, 784] };
+  try {
+    var AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    var ctx = new AudioContext();
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(function(){});
+    }
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    
+    osc.type = "sine";
+    var pair = CHIME[userId] || CHIME.p1;
+    var startFreq = pair[0];
+    var peakFreq = pair[1];
+    
+    var t = ctx.currentTime;
+    osc.frequency.setValueAtTime(startFreq, t);
+    osc.frequency.exponentialRampToValueAtTime(peakFreq, t + 0.12);
+    
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.35);
+  } catch(e) {}
+}
+
+/* ---------------- Render Helpers ---------------- */
+function getProtocols(uData) {
+  var goals = uData.goals;
+  var stepStr = Number(goals.steps).toLocaleString() + " steps";
+  var calStr = "Under " + Number(goals.calories).toLocaleString() + " kcal";
+  var protStr = Number(goals.protein) + "g+ protein";
+
+  var list = [
+    { id: "weight",   label: "Tracked Weight",      type: "input", subtext: "Daily weigh in", icon: "fa-solid fa-weight-scale" },
+    { id: "steps",    label: "Hit Steps",           type: "check", subtext: stepStr, icon: "fa-solid fa-person-walking" },
+    { id: "macros",   label: "Followed Plan",       type: "check", subtext: calStr, icon: "fa-solid fa-fire-flame-curved" }
+  ];
+
+  if (uData.trackProtein === true) {
+    list.push({ id: "protein", label: "Hit Protein Goals", type: "check", subtext: protStr, icon: "fa-solid fa-drumstick-bite" });
+  }
+
+  list.push({ id: "workout", label: "Completed Workout", type: "workout_day", subtext: "Scheduled workout session", icon: "fa-solid fa-dumbbell" });
+
+  return list;
+}
+
+function getMondayToSundayDates() {
+  var now = new Date();
+  var day = now.getDay();
+  var diffToMon = (day === 0 ? -6 : 1) - day;
+  var monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
+
+  var dates = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+    dates.push(todayDateString(d));
+  }
+  return dates;
+}
+
+function getPriorWeekDatesFor(mondayStr) {
+  var parts = mondayStr.split("-");
+  var mondayDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+
+  var prevWeekDates = [];
+  for (var i = 7; i >= 1; i--) {
+    var d = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() - i);
+    prevWeekDates.push(todayDateString(d));
+  }
+  return prevWeekDates;
+}
+
+function renderWeekGlance(userId) {
+  var uData = state.data[userId];
+  var weekDates = getMondayToSundayDates();
+  var todayStr = todayDateString();
+  var selected = state.selectedDate[userId] || todayStr;
+
+  var html = '<div class="week-glance-row">';
+  weekDates.forEach(function(dateStr, idx) {
+    var isFuture = dateStr > todayStr;
+    var isSelected = dateStr === selected;
+    var dayEval = evaluateDayRecord(uData, dateStr);
+
+    var dayStatusClass = isFuture ? "future" : (dayEval.passed ? "pass" : "fail");
+    if (isSelected) dayStatusClass += " selected";
+
+    var icon = '<i class="fa-regular fa-circle" style="font-size:9px; opacity:0.3"></i>';
+    if (!isFuture) {
+      icon = dayEval.passed ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-xmark"></i>';
+    }
+
+    var dayLetter = DAYS_OF_WEEK[idx].label;
+
+    html += '<div class="glance-day ' + dayStatusClass + '" data-action="select-glance-date" data-user="' + userId + '" data-date="' + dateStr + '">' +
+      '<span style="font-size:9px; opacity:0.8; margin-bottom:2px">' + dayLetter + '</span>' +
+      icon +
+    '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function getReflectionFor(userId, dateStr) {
+  var uData = state.data[userId] || defaultUserData();
+  return (uData.reflections && uData.reflections[dateStr]) || {
+    wins: "",
+    tension: "",
+    adjustments: "",
+    completed: false
+  };
+}
+
+function renderReflectionLine(userId, dateStr) {
+  var u = USERS[userId];
+  var borderAccent = u.accent;
+  var reflection = getReflectionFor(userId, dateStr);
+  var isDone = !!reflection.completed;
+
+  return '<div class="protocol-card reflection-line' + (isDone ? ' reflection-done' : '') + '" style="--card-accent:' + borderAccent + '" data-action="open-reflection" data-user="' + userId + '" data-date="' + dateStr + '">' +
+    '<div class="protocol-icon-box"><i class="fa-solid fa-brain"></i></div>' +
+    '<div style="flex:1">' +
+      '<div style="font-weight:700; font-size:15px">Monday Reflection</div>' +
+      '<div class="reflection-line-sub" style="font-size:11px;">' + (isDone ? 'Weekly debrief logged — tap to review' : 'Weekly house review') + '</div>' +
+    '</div>' +
+    '<i class="fa-solid fa-chevron-right chev-icon" style="margin-right:2px;"></i>' +
+    '<div class="check-btn" style="pointer-events:none;">' +
+      (isDone ? '<i class="fa-solid fa-check"></i>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function renderSettingsModal() {
+  if (!state.settingsModalUser) return "";
+  var userId = state.settingsModalUser;
+  var u = USERS[userId];
+  var uData = state.data[userId] || defaultUserData();
+  var borderAccent = u.accent;
+  var hasProteinTrack = uData.trackProtein === true;
+
+  var html = '<div class="modal-overlay" data-action="close-settings-overlay">' +
+    '<div class="modal-card" style="border-color:' + borderAccent + '">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">' +
+        '<div>' +
+          '<div style="font-family:\'IM Fell English SC\'; font-weight:900; font-size:18px; color:' + borderAccent + '">' + u.callsign + ' // Settings</div>' +
+          '<div style="font-size:11px; text-transform:uppercase; color:#94a3b8">Target Calibration</div>' +
+        '</div>' +
+        '<button type="button" data-action="close-settings-modal" class="settings-btn" style="border:none; font-size:16px"><i class="fa-solid fa-xmark"></i></button>' +
+      '</div>';
+
+  html += '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:' + borderAccent + '; margin-bottom:8px;"><i class="fa-solid fa-sliders" style="margin-right:4px"></i> Daily Target Calibration</div>' +
+    
+    '<div class="goal-input-row">' +
+      '<span style="font-size:12px; color:#cbd5e1"><i class="fa-solid fa-person-walking" style="width:16px"></i> Daily Steps:</span>' +
+      '<input type="number" step="500" class="goal-setting-input" value="' + uData.goals.steps + '" data-action="set-goal" data-user="' + userId + '" data-metric="steps" />' +
+    '</div>' +
+
+    '<div class="goal-input-row">' +
+      '<span style="font-size:12px; color:#cbd5e1"><i class="fa-solid fa-fire-flame-curved" style="width:16px"></i> Max Calories:</span>' +
+      '<input type="number" step="50" class="goal-setting-input" value="' + uData.goals.calories + '" data-action="set-goal" data-user="' + userId + '" data-metric="calories" />' +
+    '</div>' +
+
+    '<div class="goal-input-row">' +
+      '<span style="font-size:12px; color:#cbd5e1"><i class="fa-solid fa-drumstick-bite" style="width:16px"></i> Track Protein:</span>' +
+      '<button class="toggle-switch-btn ' + (hasProteinTrack ? 'on' : '') + '" data-action="toggle-protein" data-user="' + userId + '"><span class="toggle-knob"></span></button>' +
+    '</div>' +
+
+    '<div class="goal-input-row">' +
+      '<span style="font-size:12px; color:#cbd5e1"><i class="fa-solid fa-weight-scale" style="width:16px"></i> Log Weight Number:</span>' +
+      '<button class="toggle-switch-btn ' + (uData.weighMode !== "check" ? 'on' : '') + '" data-action="toggle-weigh-mode" data-user="' + userId + '" aria-label="Log weight number"><span class="toggle-knob"></span></button>' +
+    '</div>' +
+    '<div style="font-size:11px; color:#94a3b8; margin:-4px 0 10px;">' + (uData.weighMode === "check" ? 'Off: you just check off that you weighed in. Keep the number in your own app.' : 'On: type your weight each day.') + '</div>';
+
+    if (hasProteinTrack) {
+      html += '<div class="goal-input-row" style="margin-top:-4px; margin-bottom:14px; padding-left:20px;">' +
+        '<span style="font-size:11px; color:#94a3b8">Protein Goal (g):</span>' +
+        '<input type="number" step="5" class="goal-setting-input" value="' + uData.goals.protein + '" data-action="set-goal" data-user="' + userId + '" data-metric="protein" />' +
+      '</div>';
+    } else {
+      html += '<div style="margin-bottom:10px;"></div>';
+    }
+
+    html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; margin-top:14px;">' +
+      '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:' + borderAccent + '"><i class="fa-regular fa-calendar-check" style="margin-right:4px"></i> Active Workout Days</div>' +
+      '<div style="font-size:10px; color:#94a3b8">' + (uData.workoutDays || []).length + ' selected (Can be 0)</div>' +
+    '</div>' +
+    '<div style="display:flex; gap:4px; margin-bottom:18px;">';
+    DAYS_OF_WEEK.forEach(function(dayObj) {
+      var isSelected = (uData.workoutDays || []).indexOf(dayObj.jsDay) !== -1;
+      html += '<button class="day-chip" data-action="toggle-day" data-user="' + userId + '" data-day="' + dayObj.jsDay + '" style="' + (isSelected ? 'background:' + borderAccent + '; color:#0b0a0d; border-color:' + borderAccent + '' : '') + '">' +
+        dayObj.label +
+      '</button>';
+    });
+  html += '</div>';
+
+  var selectedDays = DAYS_OF_WEEK.filter(function(d) { return (uData.workoutDays || []).indexOf(d.jsDay) !== -1; });
+  if (selectedDays.length) {
+    var planMap = uData.workoutPlan || {};
+    html += '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:' + borderAccent + '; margin-bottom:4px;"><i class="fa-solid fa-dumbbell" style="margin-right:4px"></i> Workout Plan</div>' +
+      '<div style="font-size:11px; color:#94a3b8; margin-bottom:8px;">Pick a workout to add a TRAIN button that day. Custom keeps the plain checkbox for your own routine.</div>';
+    selectedDays.forEach(function(d) {
+      var cur = WORKOUT_NAMES[planMap["d" + d.jsDay]] ? planMap["d" + d.jsDay] : "custom";
+      html += '<div class="plan-row"><span class="plan-day">' + d.label + '</span><div class="plan-seg">';
+      [["legs", "Legs"], ["upper", "Upper"], ["full", "Full"], ["custom", "Custom"]].forEach(function(opt) {
+        var on = cur === opt[0];
+        html += '<button type="button" data-action="set-plan" data-user="' + userId + '" data-day="' + d.jsDay + '" data-plan="' + opt[0] + '" aria-pressed="' + on + '"' +
+          (on ? ' style="background:' + borderAccent + '; color:#0b0a0d; border-color:' + borderAccent + ';"' : '') + '>' + opt[1] + '</button>';
+      });
+      html += '</div></div>';
+    });
+    html += '<div style="margin-bottom:18px;"></div>';
+  }
+
+  html += '<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:' + borderAccent + '; margin-bottom:6px;"><i class="fa-solid fa-file-export" style="margin-right:4px"></i> Export Success History</div>' +
+    '<div style="display:flex; gap:8px;">' +
+      '<button class="export-btn" data-action="export-log" data-user="' + userId + '" data-days="7"><i class="fa-solid fa-chart-simple"></i> Last 7 Days</button>' +
+      '<button class="export-btn" data-action="export-log" data-user="' + userId + '" data-days="30"><i class="fa-solid fa-calendar-check"></i> Last 30 Days</button>' +
+    '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderReflectionModal() {
+  if (!state.reflectionModal) return "";
+  var modal = state.reflectionModal;
+  var userId = modal.user;
+  var dateStr = modal.date;
+  var u = USERS[userId];
+  var uData = state.data[userId] || defaultUserData();
+  var borderAccent = u.accent;
+
+  var reflection = getReflectionFor(userId, dateStr);
+  var prevWeekDates = getPriorWeekDatesFor(dateStr);
+
+  var dateLabel = new Date(dateStr + "T12:00:00").toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+  var html = '<div class="modal-overlay" data-action="close-reflection-overlay">' +
+    '<div class="modal-card reflection-card" style="--card-accent:' + borderAccent + '; border-color:' + borderAccent + '; margin-bottom:0;">';
+
+  html += '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">' +
+    '<div>' +
+      '<div style="display:flex; align-items:center; gap:8px;">' +
+        '<i class="fa-solid fa-brain" style="color:' + borderAccent + '; font-size:18px"></i>' +
+        '<div style="font-family:\'IM Fell English SC\'; font-weight:900; font-size:16px; letter-spacing:1px; color:' + borderAccent + '">MONDAY REFLECTION</div>' +
+      '</div>' +
+      '<div style="font-size:11px; text-transform:uppercase; color:#94a3b8; margin-top:2px;">WEEKLY HOUSE REVIEW &middot; ' + dateLabel + '</div>' +
+    '</div>' +
+    '<button type="button" data-action="close-reflection-modal" class="settings-btn" style="border:none; font-size:16px"><i class="fa-solid fa-xmark"></i></button>' +
+  '</div>';
+
+  html += '<div style="margin-bottom:16px;">' +
+    '<div class="q-title"><i class="fa-solid fa-trophy"></i> 1. BEHAVIORAL WINS</div>' +
+    '<div class="q-sub">What behavioral wins or non-scale victories felt effortless or strong this past week?</div>' +
+    '<textarea class="reflection-textarea" data-action="set-reflection" data-user="' + userId + '" data-date="' + dateStr + '" data-field="wins" placeholder="e.g., Hit 8,000 steps daily even on busy days, packed meals ahead, energy felt high during lifts...">' + (reflection.wins || '') + '</textarea>' +
+  '</div>';
+
+  html += '<div style="margin-bottom:16px;">' +
+    '<div class="q-title"><i class="fa-solid fa-chart-line"></i> 2. TENSION POINTS & 7-DAY MATRIX</div>' +
+    '<div class="q-sub">Review your 7-day consistency below. Where did resistance or missed targets show up?</div>' +
+    '<div style="display:flex; gap:6px; margin: 10px 0;">';
+    DAYS_OF_WEEK.forEach(function(dObj, idx) {
+      var dStr = prevWeekDates[idx];
+      var evalRec = evaluateDayRecord(uData, dStr);
+      var isPass = evalRec.passed;
+      html += '<div style="flex:1; text-align:center; background:' + (isPass ? 'rgba(201, 169, 110, 0.1)' : 'rgba(255, 255, 255, 0.05)') + '; border:1px solid ' + (isPass ? borderAccent : 'rgba(255,255,255,0.18)') + '; border-radius:8px; padding:6px 0;">' +
+        '<div style="font-family:\'IM Fell English SC\'; font-size:10px; color:#94a3b8">' + dObj.label.slice(0, 1) + '</div>' +
+        '<i class="fa-solid ' + (isPass ? 'fa-check' : 'fa-xmark') + '" style="font-size:12px; color:' + (isPass ? borderAccent : '#fff') + '; margin-top:2px;"></i>' +
+      '</div>';
+    });
+  html += '</div>' +
+    '<textarea class="reflection-textarea" data-action="set-reflection" data-user="' + userId + '" data-date="' + dateStr + '" data-field="tension" placeholder="e.g., Saturday dinner caused calories to slip; friction came from lack of pre-planned weekend meals...">' + (reflection.tension || '') + '</textarea>' +
+  '</div>';
+
+  html += '<div style="margin-bottom:16px;">' +
+    '<div class="q-title"><i class="fa-solid fa-arrows-rotate"></i> 3. WHAT MUST CHANGE MOVING FORWARD?</div>' +
+    '<div class="q-sub">What specific operational adjustment will you execute over the next 7 days?</div>' +
+    '<textarea class="reflection-textarea" data-action="set-reflection" data-user="' + userId + '" data-date="' + dateStr + '" data-field="adjustments" placeholder="e.g., Pre-log weekend meals on Friday, set out workout gear the night before...">' + (reflection.adjustments || '') + '</textarea>' +
+  '</div>';
+
+  html += '<div class="scripture-box">' +
+    '<div style="font-family:\'IM Fell English SC\'; font-size:11px; font-weight:800; color:' + borderAccent + '; letter-spacing:1.5px; margin-bottom:4px;">ROMANS 6:21</div>' +
+    '<div style="font-style:italic; font-size:13px; color:#cbd5e1; margin-bottom:4px;">&ldquo;But what fruit were you getting at that time from the things of which you are now ashamed? For the end of those things is death.&rdquo;</div>' +
+    '<div style="font-size:11px; color:#94a3b8">Remember the outcome of old patterns. Walk forward with discipline.</div>' +
+  '</div>';
+
+  html += '<button class="charge-btn" data-action="submit-reflection" data-user="' + userId + '" data-date="' + dateStr + '" style="background:' + borderAccent + '">' +
+    '<i class="fa-solid fa-bolt"></i> ' + (reflection.completed ? 'UPDATE REFLECTION' : 'SEAL THE WEEKLY REVIEW') +
+  '</button>';
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderExportModal() {
+  if (!state.reportModal) return "";
+  var modal = state.reportModal;
+  var u = USERS[modal.user];
+  var uData = state.data[modal.user];
+  var daysCount = modal.days;
+  var borderAccent = u.accent;
+
+  var today = new Date();
+  var dateList = [];
+  for (var i = daysCount - 1; i >= 0; i--) {
+    var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+    dateList.push(todayDateString(d));
+  }
+
+  var missedCount = { weight: 0, steps: 0, macros: 0, protein: 0, workout: 0 };
+  var totalTracked = 0;
+  var totalPassed = 0;
+
+  dateList.forEach(function(dStr) {
+    var record = evaluateDayRecord(uData, dStr);
+    totalTracked++;
+    if (record.passed) {
+      totalPassed++;
+    } else {
+      (record.missed || []).forEach(function(item) {
+        if (missedCount[item] !== undefined) missedCount[item]++;
+      });
+    }
+  });
+
+  var bottleneckLabels = {
+    steps: "Hit Steps (" + Number(uData.goals.steps).toLocaleString() + ")",
+    macros: "Followed Plan (<" + Number(uData.goals.calories).toLocaleString() + " kcal)",
+    protein: "Hit Protein Goals (" + uData.goals.protein + "g+)",
+    weight: "Tracked Weight Check-in",
+    workout: "Completed Workout Sessions"
+  };
+  var highestMissedKey = Object.keys(missedCount).reduce(function(a, b) {
+    return missedCount[a] > missedCount[b] ? a : b;
+  });
+  var bottleneckText = missedCount[highestMissedKey] > 0 
+    ? bottleneckLabels[highestMissedKey] + " (" + missedCount[highestMissedKey] + " missed)"
+    : "None! Flawless protocol execution.";
+
+  var passRate = Math.round((totalPassed / totalTracked) * 100);
+
+  var html = '<div class="modal-overlay" data-action="close-modal-overlay">' +
+    '<div class="modal-card" style="border-color:' + borderAccent + '">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
+        '<div>' +
+          '<div style="font-family:\'IM Fell English SC\'; font-weight:900; font-size:18px; color:' + borderAccent + '">' + u.callsign + ' // ' + daysCount + '-Day Export</div>' +
+          '<div style="font-size:11px; text-transform:uppercase; color:#94a3b8">House Points Report</div>' +
+        '</div>' +
+        '<button type="button" data-action="close-modal" class="settings-btn" style="border:none; font-size:16px"><i class="fa-solid fa-xmark"></i></button>' +
+      '</div>';
+
+  /* Consistency Benchmark Target Banner */
+  html += '<div style="background:rgba(201, 169, 110, 0.08); border:1px solid ' + borderAccent + '44; border-radius:10px; padding:8px 12px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">' +
+    '<div style="font-size:11px; font-weight:700; color:#cbd5e1; text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:6px;">' +
+      '<i class="fa-solid fa-bullseye" style="color:' + borderAccent + '"></i> Consistency Target' +
+    '</div>' +
+    '<div style="font-family:\'IM Fell English SC\', monospace; font-size:13px; font-weight:800; color:' + borderAccent + '">80% BENCHMARK</div>' +
+  '</div>';
+
+  html += '<div style="display:flex; gap:8px; margin-bottom:14px;">' +
+    '<div class="hud-stat" style="flex:1">' +
+      '<div style="font-size:10px; color:#94a3b8; text-transform:uppercase">Pass Rate</div>' +
+      '<div style="font-family:\'IM Fell English SC\'; font-size:18px; font-weight:800; color:' + (passRate >= 80 ? borderAccent : '#ffffff') + '">' + passRate + '%</div>' +
+    '</div>' +
+    '<div class="hud-stat" style="flex:1">' +
+      '<div style="font-size:10px; color:#94a3b8; text-transform:uppercase">Completed Days</div>' +
+      '<div style="font-family:\'IM Fell English SC\'; font-size:18px; font-weight:800; color:#fff">' + totalPassed + '/' + totalTracked + '</div>' +
+    '</div>' +
+  '</div>';
+
+  html += '<div style="font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:4px; text-transform:uppercase; letter-spacing:1px"><i class="fa-solid fa-calendar-days" style="margin-right:5px"></i> Daily Status Log</div>';
+  html += '<div class="cal-grid">';
+  dateList.forEach(function(dStr) {
+    var isPass = evaluateDayRecord(uData, dStr).passed;
+    var dayNum = dStr.slice(8);
+    html += '<div class="cal-cell ' + (isPass ? 'pass' : 'fail') + '" title="' + dStr + '">' +
+      '<span style="font-size:9px; opacity:0.8">' + dayNum + '</span>' +
+      '<i class="fa-solid ' + (isPass ? 'fa-check' : 'fa-xmark') + '" style="font-size:12px; margin-top:2px"></i>' +
+    '</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.18); border-radius:12px; padding:12px; margin-top:14px;">' +
+    '<div style="font-size:11px; font-weight:700; color:#cbd5e1; text-transform:uppercase; letter-spacing:1px"><i class="fa-solid fa-chart-line" style="margin-right:6px; color:' + borderAccent + '"></i> Greatest Consistency Drain</div>' +
+    '<div style="font-family:\'IM Fell English SC\'; font-size:14px; font-weight:700; color:#fff; margin-top:4px">' + bottleneckText + '</div>' +
+    '<div style="font-size:11px; color:#94a3b8; margin-top:4px">Focus here next week to earn more points for your house.</div>' +
+  '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderUserPanel(userId) {
+  sanitizeState();
+  var u = USERS[userId];
+  var uData = state.data[userId] || defaultUserData();
+  var isP1 = userId === "p1";
+  var activeClass = "completed-" + userId;
+  var borderAccent = u.accent;
+
+  var todayStr = todayDateString();
+  var activeDate = state.selectedDate[userId] || todayStr;
+  var isViewingPast = activeDate !== todayStr;
+
+  var activeEval = evaluateDayRecord(uData, activeDate);
+  var activeDoneMap = isViewingPast ? (uData.history[activeDate] ? (uData.history[activeDate].done || {}) : {}) : (uData.done || {});
+  var activeWeight = isViewingPast ? (uData.history[activeDate] ? uData.history[activeDate].weight || "" : "") : uData.weight;
+
+  var activeDayOfWeek = new Date(activeDate + "T12:00:00").getDay();
+  var isWorkoutDayForActiveDate = activeEval.isWorkoutDay;
+  var protocols = getProtocols(uData);
+
+  var ratio = activeEval.totalRequired > 0 ? (activeEval.completedCount / activeEval.totalRequired) : 0;
+
+  var html = '<div class="corps-card house-' + userId + '" style="--card-accent:' + borderAccent + '">';
+
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
+    '<div style="display:flex; align-items:center; gap:12px;">' +
+      '<div class="pulse-lantern" style="line-height:0; ' + getDynamicRingStyle(ratio, u.accent, u.secondary) + '">' +
+        greenLanternRingSvg(u.accent, ratio, u.initial) +
+      '</div>' +
+      '<div>' +
+        '<div style="font-family:\'IM Fell English SC\', monospace; font-size:20px; font-weight:900; letter-spacing:1px; color:' + borderAccent + '">' + u.callsign + '</div>' +
+        '<div style="font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#94A3B8">' + u.role + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<button class="settings-btn" data-action="toggle-settings" data-user="' + userId + '" title="Configure workout days and target goals">' +
+      '<i class="fa-solid fa-gear"></i>' +
+    '</button>' +
+  '</div>';
+
+  html += renderWeekGlance(userId);
+
+  if (isViewingPast) {
+    html += '<div class="history-banner" style="--card-accent:' + borderAccent + '">' +
+      '<div><i class="fa-solid fa-clock-rotate-left" style="color:' + borderAccent + '; margin-right:6px"></i>Editing Historical Log: <strong>' + activeDate + '</strong></div>' +
+      '<button class="history-reset-btn" data-action="return-today" data-user="' + userId + '">TODAY</button>' +
+    '</div>';
+  }
+
+  // Daily Protocols
+  html += '<div>';
+  if (activeDayOfWeek === 1) {
+    html += renderReflectionLine(userId, activeDate);
+  }
+  protocols.forEach(function(p) {
+    if (p.type === "workout_day" && !isWorkoutDayForActiveDate) {
+      return;
+    }
+
+    if (p.type === "input" && uData.weighMode === "check") {
+      var weighedDone = !!activeDoneMap.weighed;
+      html += '<div class="protocol-card ' + (weighedDone ? activeClass : "") + '">' +
+        '<div class="protocol-icon-box" style="' + (weighedDone ? 'color:' + borderAccent + ';' : '') + '"><i class="' + p.icon + '"></i></div>' +
+        '<div style="flex:1">' +
+          '<div style="font-weight:700; font-size:15px">Weighed In</div>' +
+          '<div style="font-size:11px; color:#94a3b8">Number kept in your own app</div>' +
+        '</div>' +
+        '<button type="button" data-action="toggle-check" data-user="' + userId + '" data-protocol="weighed" data-date="' + activeDate + '" class="check-btn" aria-label="Weighed in" style="' + (weighedDone ? 'background:' + borderAccent + '; border-color:' + borderAccent + '; color:#000;' : '') + '">' +
+          (weighedDone ? '<i class="fa-solid fa-check"></i>' : '') +
+        '</button>' +
+      '</div>';
+    } else if (p.type === "input") {
+      html += '<div class="protocol-card">' +
+        '<div class="protocol-icon-box"><i class="' + p.icon + '"></i></div>' +
+        '<div style="flex:1">' +
+          '<div style="font-weight:700; font-size:15px">' + p.label + '</div>' +
+          '<div style="font-size:11px; color:#94a3b8">' + p.subtext + '</div>' +
+        '</div>' +
+        '<div style="width:80px">' +
+          '<input class="val-input" type="number" step="0.1" placeholder="---" value="' + (activeWeight || "") + '" data-action="set-weight" data-user="' + userId + '" data-date="' + activeDate + '" />' +
+        '</div>' +
+      '</div>';
+    } else {
+      var isDone = !!activeDoneMap[p.id];
+      var isWorkoutCard = p.id === "workout";
+      var trained = isWorkoutCard ? finishedWorkouts[userId][activeDate] : null;
+      var subtext = trained && trained.day ? "Trained: " + (WORKOUT_NAMES[trained.day] || trained.day) : p.subtext;
+      var planned = isWorkoutCard ? getPlannedWorkout(uData, activeDate) : null;
+      if (isWorkoutCard && !trained && planned) subtext = WORKOUT_NAMES[planned] + " planned";
+      var trainBtn = (isWorkoutCard && !isViewingPast && planned)
+        ? '<a class="train-btn" style="--train-accent:' + borderAccent + '" href="workout.html?u=' + userId + '&d=' + planned + '"><i class="fa-solid fa-dumbbell"></i>' + (isDone ? 'LOG' : 'TRAIN') + '</a>'
+        : '';
+      html += '<div class="protocol-card ' + (isDone ? activeClass : "") + '">' +
+        '<div class="protocol-icon-box" style="' + (isDone ? 'color:' + borderAccent + ';' : '') + '"><i class="' + p.icon + '"></i></div>' +
+        '<div style="flex:1">' +
+          '<div style="font-weight:700; font-size:15px">' + p.label + '</div>' +
+          '<div style="font-size:11px; color:#94a3b8">' + subtext + '</div>' +
+        '</div>' +
+        trainBtn +
+        '<button type="button" data-action="toggle-check" data-user="' + userId + '" data-protocol="' + p.id + '" data-date="' + activeDate + '" class="check-btn" style="' + (isDone ? 'background:' + borderAccent + '; border-color:' + borderAccent + '; color:#000;' : '') + '">' +
+          (isDone ? '<i class="fa-solid fa-check"></i>' : '') + 
+        '</button>' +
+      '</div>';
+    }
+  });
+  html += '</div>';
+
+  html += '<div class="hud-stat-box">' +
+    '<div class="hud-stat">' +
+      '<div style="font-size:10px; color:#94A3B8; text-transform:uppercase">' + (isViewingPast ? 'Points That Day' : 'Points Today') + '</div>' +
+      '<div style="font-family:\'IM Fell English SC\'; font-weight:800; font-size:20px; color:' + (activeEval.passed ? borderAccent : '#ffffff') + '">' +
+        (shownPoints[userId + "|" + activeDate] = dayPoints(userId, activeDate)) + (activeEval.passed ? ' <span style="font-size:11px">FULL DAY</span>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="hud-stat">' +
+      '<div style="font-size:10px; color:#94A3B8; text-transform:uppercase">Weight</div>' +
+      '<div style="font-family:\'IM Fell English SC\'; font-weight:800; font-size:17px; color:#fff">' + (uData.weighMode === "check" ? (activeDoneMap.weighed ? 'Done' : '--') : (activeWeight || '--')) + '</div>' +
+    '</div>' +
+    '<div class="hud-stat">' +
+      '<div style="font-size:10px; color:#94A3B8; text-transform:uppercase">Workout Day</div>' +
+      '<div style="font-family:\'IM Fell English SC\'; font-weight:800; font-size:15px; color:' + (isWorkoutDayForActiveDate ? borderAccent : '#64748b') + '">' + (isWorkoutDayForActiveDate ? 'SCHEDULED' : 'REST DAY') + '</div>' +
+    '</div>' +
+  '</div>';
+
+  html += '</div>';
+  return html;
+}
+
+function render() {
+  sanitizeState();
+  var now = new Date();
+  var hours = now.getHours();
+  var minutes = now.getMinutes();
+  var ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  var timeStr = hours + ":" + (minutes < 10 ? "0" + minutes : minutes);
+
+
+  var html = '<div style="position:relative; z-index:1">';
+
+
+  html += renderHouseCup();
+
+  html += '<div class="narrow-only" style="display:flex; gap:10px; margin-bottom:16px;">';
+  Object.keys(USERS).forEach(function(k) {
+    var uu = USERS[k];
+    var ev = evaluateDayRecord(state.data[k], state.selectedDate[k] || todayDateString());
+    var rt = ev.totalRequired > 0 ? (ev.completedCount / ev.totalRequired) : 0;
+    html += '<button class="lantern-btn house-' + k + ' ' + (state.activeTab === k ? 'selected-' + k : '') + '" data-action="select-tab" data-tab="' + k + '">' +
+      '<div class="pulse-lantern" style="line-height:0; ' + getDynamicRingStyle(rt, uu.accent, uu.secondary) + '">' + greenLanternRingSvg(uu.accent, rt, uu.initial) + '</div>' +
+      '<span style="font-family:\'IM Fell English SC\'; font-size:13px; font-weight:800">' + uu.callsign + '</span>' +
+      '<span style="font-size:11px; letter-spacing:1px; text-transform:uppercase; color:' + uu.accent + '">' + uu.house + '</span>' +
+    '</button>';
+  });
+  html += '</div>';
+
+  html += '<div class="user-grid">';
+  Object.keys(USERS).forEach(function(uId) {
+    var active = state.activeTab === uId;
+    html += '<div class="user-piece' + (active ? ' active' : '') + '">' + renderUserPanel(uId) + '</div>';
+  });
+  html += '</div>';
+
+  html += renderSettingsModal();
+  html += renderExportModal();
+  html += renderReflectionModal();
+
+  html += '</div>';
+  document.getElementById("root").innerHTML = html;
+}
+
+/* ---------------- Event Listeners ---------------- */
+document.getElementById("root").addEventListener("click", function(e) {
+  var el = e.target.closest("[data-action]");
+  if (!el) return;
+  var action = el.dataset.action;
+
+  if (action === "select-tab") {
+    state.activeTab = el.dataset.tab;
+    render();
+  } else if (action === "select-glance-date") {
+    var uG = el.dataset.user;
+    var dG = el.dataset.date;
+    if (dG > todayDateString()) return;
+    state.selectedDate[uG] = dG;
+    render();
+  } else if (action === "return-today") {
+    var uR = el.dataset.user;
+    state.selectedDate[uR] = todayDateString();
+    render();
+  } else if (action === "toggle-settings") {
+    var uS = el.dataset.user;
+    state.settingsModalUser = state.settingsModalUser === uS ? null : uS;
+    render();
+  } else if (action === "close-settings-modal") {
+    state.settingsModalUser = null;
+    render();
+  } else if (action === "close-settings-overlay") {
+    if (e.target.classList.contains("modal-overlay")) {
+      state.settingsModalUser = null;
+      render();
+    }
+  } else if (action === "toggle-weigh-mode") {
+    var uWm = el.dataset.user;
+    sanitizeState();
+    state.data[uWm].weighMode = state.data[uWm].weighMode === "check" ? "number" : "check";
+    syncDayToHistory(uWm, state.selectedDate[uWm] || todayDateString());
+    savePersisted();
+    render();
+  } else if (action === "toggle-protein") {
+    var uP = el.dataset.user;
+    sanitizeState();
+    state.data[uP].trackProtein = !state.data[uP].trackProtein;
+    syncDayToHistory(uP, state.selectedDate[uP] || todayDateString());
+    savePersisted();
+    render();
+  } else if (action === "toggle-day") {
+    var uD = el.dataset.user;
+    var day = parseInt(el.dataset.day, 10);
+    sanitizeState();
+    var days = state.data[uD].workoutDays || [];
+    var idx = days.indexOf(day);
+    if (idx !== -1) {
+      days.splice(idx, 1);
+    } else {
+      days.push(day);
+      days.sort();
+    }
+    state.data[uD].workoutDays = days;
+    syncDayToHistory(uD, state.selectedDate[uD] || todayDateString());
+    savePersisted();
+    render();
+  } else if (action === "set-plan") {
+    var uPl = el.dataset.user;
+    sanitizeState();
+    var plan = state.data[uPl].workoutPlan || {};
+    if (el.dataset.plan === "custom") delete plan["d" + el.dataset.day];
+    else plan["d" + el.dataset.day] = el.dataset.plan;
+    state.data[uPl].workoutPlan = plan;
+    savePersisted();
+    render();
+  } else if (action === "export-log") {
+    var uExp = el.dataset.user;
+    var daysExp = parseInt(el.dataset.days, 10);
+    state.settingsModalUser = null;
+    state.reportModal = { user: uExp, days: daysExp };
+    render();
+  } else if (action === "close-modal") {
+    state.reportModal = null;
+    render();
+  } else if (action === "close-modal-overlay") {
+    if (e.target.classList.contains("modal-overlay")) {
+      state.reportModal = null;
+      render();
+    }
+  } else if (action === "open-reflection") {
+    var uOpen = el.dataset.user;
+    var dOpen = el.dataset.date;
+    state.reflectionModal = { user: uOpen, date: dOpen };
+    render();
+  } else if (action === "close-reflection-modal") {
+    state.reflectionModal = null;
+    render();
+  } else if (action === "close-reflection-overlay") {
+    if (e.target.classList.contains("modal-overlay")) {
+      state.reflectionModal = null;
+      render();
+    }
+  } else if (action === "submit-reflection") {
+    var uRef = el.dataset.user;
+    var refDate = el.dataset.date || todayDateString();
+    sanitizeState();
+    var refBefore = dayPoints(uRef, refDate);
+
+    if (!state.data[uRef].reflections[refDate]) {
+      state.data[uRef].reflections[refDate] = { wins: "", tension: "", adjustments: "", completed: true };
+    } else {
+      state.data[uRef].reflections[refDate].completed = true;
+    }
+
+    playRingChargeSound(uRef);
+    savePersisted();
+    state.reflectionModal = null;
+    render();
+    showPointsToast(uRef, dayPoints(uRef, refDate) - refBefore);
+  } else if (action === "toggle-check") {
+    var u = el.dataset.user;
+    var proto = el.dataset.protocol;
+    var dateTarget = el.dataset.date || state.selectedDate[u] || todayDateString();
+    sanitizeState();
+    var ptsBefore = dayPoints(u, dateTarget);
+
+    if (dateTarget === todayDateString()) {
+      if (!state.data[u].done) state.data[u].done = {};
+      state.data[u].done[proto] = !state.data[u].done[proto];
+    } else {
+      if (!state.data[u].history) state.data[u].history = {};
+      if (!state.data[u].history[dateTarget]) {
+        state.data[u].history[dateTarget] = { done: {}, weight: "" };
+      }
+      if (!state.data[u].history[dateTarget].done) {
+        state.data[u].history[dateTarget].done = {};
+      }
+      var prev = !!state.data[u].history[dateTarget].done[proto];
+      state.data[u].history[dateTarget].done[proto] = !prev;
+    }
+
+    syncDayToHistory(u, dateTarget);
+    playRingChargeSound(u);
+    savePersisted();
+    render();
+    showPointsToast(u, dayPoints(u, dateTarget) - ptsBefore);
+  }
+});
+
+document.getElementById("root").addEventListener("change", function(e) {
+  var el = e.target.closest("[data-action]");
+  if (!el) return;
+  var action = el.dataset.action;
+  var u = el.dataset.user;
+  sanitizeState();
+
+  if (action === "set-weight") {
+    var dateTarget = el.dataset.date || state.selectedDate[u] || todayDateString();
+    var wBefore = shownPoints[u + "|" + dateTarget];
+    if (dateTarget === todayDateString()) {
+      state.data[u].weight = el.value;
+    } else {
+      if (!state.data[u].history) state.data[u].history = {};
+      if (!state.data[u].history[dateTarget]) {
+        state.data[u].history[dateTarget] = { done: {}, weight: "" };
+      }
+      state.data[u].history[dateTarget].weight = el.value;
+    }
+    syncDayToHistory(u, dateTarget);
+    savePersisted();
+    render();
+    if (wBefore !== undefined) showPointsToast(u, dayPoints(u, dateTarget) - wBefore);
+  } else if (action === "set-goal") {
+    var metric = el.dataset.metric;
+    var val = parseFloat(el.value);
+    if (!isNaN(val) && val > 0) {
+      state.data[u].goals[metric] = val;
+      syncDayToHistory(u, state.selectedDate[u] || todayDateString());
+      savePersisted();
+      render();
+    }
+  }
+});
+
+document.getElementById("root").addEventListener("input", function(e) {
+  var elWeight = e.target.closest("[data-action='set-weight']");
+  if (elWeight) {
+    var uW = elWeight.dataset.user;
+    var dateTarget = elWeight.dataset.date || state.selectedDate[uW] || todayDateString();
+    sanitizeState();
+
+    if (dateTarget === todayDateString()) {
+      state.data[uW].weight = elWeight.value;
+    } else {
+      if (!state.data[uW].history) state.data[uW].history = {};
+      if (!state.data[uW].history[dateTarget]) {
+        state.data[uW].history[dateTarget] = { done: {}, weight: "" };
+      }
+      state.data[uW].history[dateTarget].weight = elWeight.value;
+    }
+    return;
+  }
+
+  var elReflect = e.target.closest("[data-action='set-reflection']");
+  if (elReflect) {
+    var uR = elReflect.dataset.user;
+    var field = elReflect.dataset.field;
+    var refDateIn = elReflect.dataset.date || todayDateString();
+    sanitizeState();
+
+    if (!state.data[uR].reflections[refDateIn]) {
+      state.data[uR].reflections[refDateIn] = { wins: "", tension: "", adjustments: "", completed: false };
+    }
+    state.data[uR].reflections[refDateIn][field] = elReflect.value;
+  }
+});
+
+setInterval(function() {
+  var activeEl = document.activeElement;
+  if (!activeEl || (activeEl.tagName !== "INPUT" && activeEl.tagName !== "TEXTAREA")) {
+    render();
+  }
+}, 10000);
+
+initPersistence();
+</script>
+</body>
+</html>
