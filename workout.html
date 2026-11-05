@@ -370,7 +370,8 @@ const store={ref:null,mode:"local",
     try{
       if(!window.firebase) return;
       if(!firebase.apps.length) firebase.initializeApp(FIREBASE);
-      this.ref=firebase.database().ref("house_workouts_v1/"+U); this.mode="db";
+      // 0104 and 0211 share workout logs with Lanterncorps; 0814 keeps hers here.
+      this.ref=firebase.database().ref((U==="p3"?"house_workouts_v1/":"lantern_workouts_v1/")+U); this.mode="db";
     }catch(e){ this.mode="local"; }
   },
   async loadAll(){
