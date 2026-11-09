@@ -1019,6 +1019,29 @@ function savePersisted() {
   });
 }
 
+// Start a new day for each record source whose date has changed: yesterday's checks go to
+// history and today's checklist clears. Returns true when anything rolled over.
+function rolloverIfNeeded() {
+  var today = todayDateString();
+  var rolled = false;
+  Object.keys(SOURCES).forEach(function(key) {
+    var src = SOURCES[key];
+    if (!src.loaded || !src.lastActiveDate || src.lastActiveDate === today) return;
+    var prevDate = src.lastActiveDate;
+    src.users.forEach(function(u) {
+      syncDayToHistory(u, prevDate);
+      state.data[u].done = {};
+      state.data[u].weight = "";
+      state.selectedDate[u] = today;
+    });
+    src.lastActiveDate = today;
+    src.ref.child("lastActiveDate").set(today);
+    rolled = true;
+  });
+  if (rolled) savePersisted();
+  return rolled;
+}
+
 function initPersistence() {
   Object.keys(SOURCES).forEach(function(key) {
     var src = SOURCES[key];
@@ -1035,16 +1058,7 @@ function initPersistence() {
       src.loaded = true;
 
       if (src.lastActiveDate && src.lastActiveDate !== today) {
-        var prevDate = src.lastActiveDate;
-        src.users.forEach(function(u) {
-          syncDayToHistory(u, prevDate);
-          state.data[u].done = {};
-          state.data[u].weight = "";
-          state.selectedDate[u] = today;
-        });
-        src.lastActiveDate = today;
-        src.ref.child("lastActiveDate").set(today);
-        savePersisted();
+        rolloverIfNeeded();
       } else if (!src.lastActiveDate) {
         src.lastActiveDate = today;
         src.ref.child("lastActiveDate").set(today);
@@ -1906,6 +1920,7 @@ function render() {
 
 /* ---------------- Event Listeners ---------------- */
 document.getElementById("root").addEventListener("click", function(e) {
+  if (rolloverIfNeeded()) { render(); return; } // the day changed; show today before counting the tap
   var el = e.target.closest("[data-action]");
   if (!el) return;
   var action = el.dataset.action;
@@ -2116,7 +2131,17 @@ document.getElementById("root").addEventListener("input", function(e) {
   }
 });
 
+// A new day can start while the page stays open (e.g. a home-screen app resumed in the morning).
+// Check on a timer, whenever the page comes back into view, and before any tap counts.
+document.addEventListener("visibilitychange", function() {
+  if (!document.hidden && rolloverIfNeeded()) render();
+});
+window.addEventListener("focus", function() {
+  if (rolloverIfNeeded()) render();
+});
+
 setInterval(function() {
+  rolloverIfNeeded();
   var activeEl = document.activeElement;
   if (!activeEl || (activeEl.tagName !== "INPUT" && activeEl.tagName !== "TEXTAREA")) {
     render();
