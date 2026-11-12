@@ -39,6 +39,7 @@ if (!window.firebase) {
   const snap=p=>({val:()=>{const v=get(load(),p);return v===undefined?null:JSON.parse(JSON.stringify(v));}});
   function ref(p){ p=parts(p||"").join("/"); return {
     child:c=>ref(p+"/"+c), set:v=>{ window.__writes=(window.__writes||[]).concat([p]); put(p,v); return Promise.resolve(); },
+    update:o=>{ Object.keys(o).forEach(k=>put(p+'/'+k,o[k])); return Promise.resolve(); },
     once:()=>Promise.resolve(snap(p)), on:(e,cb)=>{ listeners.push({p,cb}); setTimeout(()=>cb(snap(p)),0); } }; }
   window.firebase={apps:[],initializeApp(){this.apps.push(1)},database:()=>({ref})};
 })();
@@ -1007,15 +1008,23 @@ function syncDayToHistory(userId, dateStr) {
   uData.history[dateStr].completedCount = evalResult.completedCount;
 }
 
-function savePersisted() {
+// Firebase reports a write back to this page instantly, before the next line runs, and that report
+// reloads every record from the database. So each source is saved in ONE update: separate writes
+// would let the first one reload stale copies of the others and silently drop their changes.
+function savePersisted(extra) {
   sanitizeState();
-  Object.keys(USERS).forEach(function(u) {
-    var src = sourceOf(u);
+  Object.keys(SOURCES).forEach(function(key) {
+    var src = SOURCES[key];
     if (!src.loaded) return; // never write a record before it has been read
-    var json = JSON.stringify(state.data[u]);
-    if (lastSynced[u] === json) return;
-    lastSynced[u] = json;
-    src.ref.child("data/" + u).set(JSON.parse(json));
+    var updates = {};
+    src.users.forEach(function(u) {
+      var json = JSON.stringify(state.data[u]);
+      if (lastSynced[u] === json) return;
+      lastSynced[u] = json;
+      updates["data/" + u] = JSON.parse(json);
+    });
+    if (extra && extra[key]) Object.keys(extra[key]).forEach(function(k) { updates[k] = extra[key][k]; });
+    if (Object.keys(updates).length) src.ref.update(updates);
   });
 }
 
@@ -1024,6 +1033,7 @@ function savePersisted() {
 function rolloverIfNeeded() {
   var today = todayDateString();
   var rolled = false;
+  var dates = {};
   Object.keys(SOURCES).forEach(function(key) {
     var src = SOURCES[key];
     if (!src.loaded || !src.lastActiveDate || src.lastActiveDate === today) return;
@@ -1035,10 +1045,10 @@ function rolloverIfNeeded() {
       state.selectedDate[u] = today;
     });
     src.lastActiveDate = today;
-    src.ref.child("lastActiveDate").set(today);
+    dates[key] = { lastActiveDate: today }; // saved together with the cleared checklists
     rolled = true;
   });
-  if (rolled) savePersisted();
+  if (rolled) savePersisted(dates);
   return rolled;
 }
 
